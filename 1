@@ -157,15 +157,33 @@ local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Size = UDim2.new(0, 350, 0, 450) 
 MainFrame.Position = UDim2.new(0.5, -175, 0.5, -225)
-MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+MainFrame.BackgroundTransparency = 1 -- Deixado transparente para exibir apenas o fundo personalizado
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true 
 MainFrame.Parent = ScreenGui
 
+-- [NOVO COMPONENTE DE IMAGEM DE FUNDO PERSONALIZADA]
+local CustomBackground = Instance.new("ImageLabel")
+CustomBackground.Name = "CustomBackground"
+CustomBackground.Size = UDim2.new(1, 0, 1, 0)
+CustomBackground.Position = UDim2.new(0, 0, 0, 0)
+CustomBackground.Image = "rbxassetid://112079470818320"
+CustomBackground.ScaleType = Enum.ScaleType.Fit -- Ajusta mantendo a proporção original
+CustomBackground.BackgroundTransparency = 1
+CustomBackground.ZIndex = 0 -- Mantém atrás de todos os elementos de texto e botões
+CustomBackground.Parent = MainFrame
+
 local MainCorner = Instance.new("UICorner")
 MainCorner.CornerRadius = UDim.new(0, 10)
-MainCorner.Parent = MainFrame
+MainCorner.Parent = CustomBackground
+
+-- Linha fina de contorno estético
+local UIStroke = Instance.new("UIStroke")
+UIStroke.Thickness = 1.5
+UIStroke.Color = Color3.fromRGB(80, 80, 80)
+UIStroke.Transparency = 0.4
+UIStroke.Parent = MainFrame
 
 local TitleText = Instance.new("TextLabel")
 TitleText.Size = UDim2.new(1, 0, 0, 45)
@@ -175,21 +193,29 @@ TitleText.TextColor3 = Color3.fromRGB(255, 255, 255)
 TitleText.TextXAlignment = Enum.TextXAlignment.Center
 TitleText.Font = Enum.Font.SpecialElite 
 TitleText.TextSize = 14
+TitleText.ZIndex = 2
 TitleText.Parent = MainFrame
 
 local StatusLabel = Instance.new("TextLabel")
 StatusLabel.Size = UDim2.new(1, -30, 0, 30)
 StatusLabel.Position = UDim2.new(0, 15, 0, 45)
-StatusLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+StatusLabel.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+StatusLabel.BackgroundTransparency = 0.3 -- Leve transparência para integrar com o fundo
 StatusLabel.Text = "ALVO: NENHUM (SELECIONE NA LISTA)"
 StatusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
 StatusLabel.Font = Enum.Font.SourceSansBold
 StatusLabel.TextSize = 13
+StatusLabel.ZIndex = 2
 StatusLabel.Parent = MainFrame
 
 local StatusCorner = Instance.new("UICorner")
 StatusCorner.CornerRadius = UDim.new(0, 6)
 StatusCorner.Parent = StatusLabel
+
+local StatusStroke = Instance.new("UIStroke")
+StatusStroke.Thickness = 1
+StatusStroke.Color = Color3.fromRGB(50, 50, 60)
+StatusStroke.Parent = StatusLabel
 
 local PlayerListFrame = Instance.new("ScrollingFrame")
 PlayerListFrame.Size = UDim2.new(1, -30, 1, -120)
@@ -200,6 +226,7 @@ PlayerListFrame.BorderSizePixel = 0
 PlayerListFrame.ScrollBarThickness = 6
 PlayerListFrame.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 100)
 PlayerListFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+PlayerListFrame.ZIndex = 2
 PlayerListFrame.Parent = MainFrame
 
 local ListLayout = Instance.new("UIListLayout")
@@ -223,18 +250,24 @@ local function atualizarListaJogadores()
         if player ~= lp then
             local PlayerBtn = Instance.new("TextButton")
             PlayerBtn.Size = UDim2.new(1, -10, 0, 35)
-            PlayerBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+            PlayerBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
             PlayerBtn.BackgroundTransparency = 0.2
             PlayerBtn.Text = "  " .. player.DisplayName .. " (@" .. player.Name .. ")"
             PlayerBtn.TextColor3 = Color3.fromRGB(230, 230, 230)
             PlayerBtn.Font = Enum.Font.SourceSansBold
             PlayerBtn.TextSize = 13
             PlayerBtn.TextXAlignment = Enum.TextXAlignment.Left
+            PlayerBtn.ZIndex = 3
             PlayerBtn.Parent = PlayerListFrame
             
             local BtnCorner = Instance.new("UICorner")
             BtnCorner.CornerRadius = UDim.new(0, 6)
             BtnCorner.Parent = PlayerBtn
+            
+            local BtnStroke = Instance.new("UIStroke")
+            BtnStroke.Thickness = 1
+            BtnStroke.Color = Color3.fromRGB(60, 60, 75)
+            BtnStroke.Parent = PlayerBtn
             
             PlayerBtn.MouseButton1Click:Connect(function()
                 JogadorSelecionado = player
@@ -245,6 +278,18 @@ local function atualizarListaJogadores()
     end
 end
 
+-- Inicializa a lista ao abrir o script
+atualizarListaJogadores()
+
+-- Executa a cópia ao pressionar a tecla G
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if not gameProcessed and input.KeyCode == Enum.KeyCode.G then
+        if JogadorSelecionado then
+            executarInjecaoCompleta(JogadorSelecionado)
+        end
+    end
+end)
+
 -- Conexões de Rede (Entrada/Saída que limpam e listam de forma automática)
 players.PlayerAdded:Connect(function()
     task.wait(1)
@@ -254,36 +299,10 @@ end)
 players.PlayerRemoving:Connect(function(player)
     if JogadorSelecionado == player then
         JogadorSelecionado = nil
-        StatusLabel.Text = "ALVO: NENHUM (SELECIONE NA LISTA)"
-        StatusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
-    end
-    atualizarListaJogadores()
-end)
-
+StatusLabel.Text = "ALVO: NENHUM (SELECIONE NA LISTA)"
+StatusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+end
+task.wait(1)
 atualizarListaJogadores()
-
--- Ouvinte de Teclado (G para Clonar, CTRL para minimizar, Delete para fechar)
-local conexaoTeclado
-conexaoTeclado = UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    
-    if input.KeyCode == Enum.KeyCode.G then
-        if JogadorSelecionado then
-            executarInjecaoCompleta(JogadorSelecionado)
-            StatusLabel.Text = "SKIN COPIADA COM SUCESSO!"
-            StatusLabel.TextColor3 = Color3.fromRGB(50, 255, 50)
-            task.wait(1)
-            if JogadorSelecionado then
-                StatusLabel.Text = "SELECIONADO: " .. JogadorSelecionado.DisplayName:upper() .. " | [G] PARA COPIAR"
-                StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-            end
-        end
-    elseif input.KeyCode == Enum.KeyCode.LeftControl then
-        MenuVisivel = not MenuVisivel
-        MainFrame.Visible = MenuVisivel
-    elseif input.KeyCode == Enum.KeyCode.Delete then
-        if conexaoTeclado then conexaoTeclado:Disconnect() end
-        ScreenGui:Destroy()
-    end
 end)
 
