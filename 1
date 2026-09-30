@@ -157,28 +157,29 @@ local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Size = UDim2.new(0, 350, 0, 450) 
 MainFrame.Position = UDim2.new(0.5, -175, 0.5, -225)
-MainFrame.BackgroundTransparency = 1 -- Deixado transparente para exibir apenas o fundo personalizado
+MainFrame.BackgroundTransparency = 1 -- Mantém o frame pai sem fundo visível
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true 
 MainFrame.Parent = ScreenGui
 
--- [NOVO COMPONENTE DE IMAGEM DE FUNDO PERSONALIZADA]
+-- [COMPONENTE DA IMAGEM DE FUNDO - CONFIGURADO PARA TRANSPARÊNCIA ZERO]
 local CustomBackground = Instance.new("ImageLabel")
 CustomBackground.Name = "CustomBackground"
 CustomBackground.Size = UDim2.new(1, 0, 1, 0)
 CustomBackground.Position = UDim2.new(0, 0, 0, 0)
 CustomBackground.Image = "rbxassetid://112079470818320"
-CustomBackground.ScaleType = Enum.ScaleType.Fit -- Ajusta mantendo a proporção original
+CustomBackground.ScaleType = Enum.ScaleType.Fit
 CustomBackground.BackgroundTransparency = 1
-CustomBackground.ZIndex = 0 -- Mantém atrás de todos os elementos de texto e botões
+CustomBackground.ImageTransparency = 1 -- Definido em 1 (Opacidade 0, totalmente invisível)
+CustomBackground.ZIndex = 0
 CustomBackground.Parent = MainFrame
 
 local MainCorner = Instance.new("UICorner")
 MainCorner.CornerRadius = UDim.new(0, 10)
 MainCorner.Parent = CustomBackground
 
--- Linha fina de contorno estético
+-- Borda estética
 local UIStroke = Instance.new("UIStroke")
 UIStroke.Thickness = 1.5
 UIStroke.Color = Color3.fromRGB(80, 80, 80)
@@ -200,7 +201,7 @@ local StatusLabel = Instance.new("TextLabel")
 StatusLabel.Size = UDim2.new(1, -30, 0, 30)
 StatusLabel.Position = UDim2.new(0, 15, 0, 45)
 StatusLabel.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-StatusLabel.BackgroundTransparency = 0.3 -- Leve transparência para integrar com o fundo
+StatusLabel.BackgroundTransparency = 0.3
 StatusLabel.Text = "ALVO: NENHUM (SELECIONE NA LISTA)"
 StatusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
 StatusLabel.Font = Enum.Font.SourceSansBold
@@ -281,24 +282,37 @@ end
 -- Inicializa a lista ao abrir o script
 atualizarListaJogadores()
 
--- Executa a cópia ao pressionar a tecla G
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if not gameProcessed and input.KeyCode == Enum.KeyCode.G then
+-- Armazena a conexão do evento para limpeza futura coerente
+local EntradaTecladoConexao
+EntradaTecladoConexao = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    
+    -- Executa a cópia ao pressionar a tecla G
+    if input.KeyCode == Enum.KeyCode.G then
         if JogadorSelecionado then
             executarInjecaoCompleta(JogadorSelecionado)
         end
-    end
+        
+    -- [SISTEMA DE OCULTAR/EXIBIR COM TECLA CTRL]
+    elseif input.KeyCode == Enum.KeyCode.LeftControl or input.KeyCode == Enum.KeyCode.RightControl then
+        MenuVisivel = not MenuVisivel
+        MainFrame.Visible = MenuVisivel
+        -- [SISTEMA DE REMOVER COM TECLA DELETE]
+elseif input.KeyCode == Enum.KeyCode.Delete then
+if EntradaTecladoConexao then
+EntradaTecladoConexao:Disconnect()
+end
+ScreenGui:Destroy()
+end
 end)
-
 -- Conexões de Rede (Entrada/Saída que limpam e listam de forma automática)
-players.PlayerAdded:Connect(function()
-    task.wait(1)
-    atualizarListaJogadores()
+local ConexaoPlayerAdded = players.PlayerAdded:Connect(function()
+task.wait(1)
+atualizarListaJogadores()
 end)
-
-players.PlayerRemoving:Connect(function(player)
-    if JogadorSelecionado == player then
-        JogadorSelecionado = nil
+local ConexaoPlayerRemoving = players.PlayerRemoving:Connect(function(player)
+if JogadorSelecionado == player then
+JogadorSelecionado = nil
 StatusLabel.Text = "ALVO: NENHUM (SELECIONE NA LISTA)"
 StatusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
 end
